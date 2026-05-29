@@ -2,8 +2,9 @@
 
 An interactive web application and systems analysis project exploring the low-level mechanics of Byte-Pair Encoding (BPE) tokenization used in modern Large Language Models (LLMs). 
 
-<img width="1918" height="758" alt="image" src="https://github.com/user-attachments/assets/e6790677-81ea-4821-b901-126a7ce7ed8a" />
-<img width="1552" height="362" alt="image" src="https://github.com/user-attachments/assets/4f1235a0-c2d1-4c09-97cd-fca3eeea0c53" />
+<img width="1915" height="727" alt="image" src="https://github.com/user-attachments/assets/e8b335c1-e0b9-4595-98a4-9ef2edc16b95" />
+<img width="1787" height="365" alt="image" src="https://github.com/user-attachments/assets/d7b01d87-1a41-44ae-a63c-2ffbb7ef9c89" />
+
 
 
 
