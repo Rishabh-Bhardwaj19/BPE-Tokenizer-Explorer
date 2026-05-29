@@ -1,7 +1,7 @@
 import streamlit as st
 from tokenizers import Tokenizer
 import os, time, math
-
+ 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="BPE Tokenizer Explorer",
@@ -9,12 +9,12 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
+ 
 # ── Global CSS ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Sora:wght@300;400;600;700&display=swap');
-
+ 
 /* ── Root theme ── */
 :root {
     --bg0: #0b0c10;
@@ -31,7 +31,7 @@ st.markdown("""
     --mono: 'Space Mono', monospace;
     --body: 'Sora', sans-serif;
 }
-
+ 
 /* ── Global overrides ── */
 html, body, [class*="css"] {
     font-family: var(--body) !important;
@@ -39,7 +39,7 @@ html, body, [class*="css"] {
     color: var(--text1) !important;
 }
 .stApp { background-color: var(--bg0) !important; }
-
+ 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background-color: var(--bg1) !important;
@@ -49,10 +49,10 @@ html, body, [class*="css"] {
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3 { color: var(--text1) !important; }
-
+ 
 /* ── Headings ── */
 h1, h2, h3 { font-family: var(--mono) !important; }
-
+ 
 /* ── Metric cards ── */
 [data-testid="metric-container"] {
     background: var(--bg2) !important;
@@ -71,7 +71,7 @@ h1, h2, h3 { font-family: var(--mono) !important; }
     letter-spacing: 0.12em !important;
     color: var(--text2) !important;
 }
-
+ 
 /* ── Text area ── */
 textarea {
     background: var(--bg2) !important;
@@ -85,7 +85,7 @@ textarea:focus {
     border-color: var(--accent) !important;
     box-shadow: 0 0 0 2px rgba(124,108,250,0.2) !important;
 }
-
+ 
 /* ── Buttons ── */
 .stButton > button {
     background: var(--accent) !important;
@@ -102,7 +102,7 @@ textarea:focus {
     background: #6558e0 !important;
     transform: translateY(-1px) !important;
 }
-
+ 
 /* ── Select box ── */
 .stSelectbox > div > div {
     background: var(--bg2) !important;
@@ -111,7 +111,7 @@ textarea:focus {
     font-family: var(--mono) !important;
     border-radius: 8px !important;
 }
-
+ 
 /* ── Tabs ── */
 .stTabs [data-baseweb="tab-list"] {
     background: var(--bg1) !important;
@@ -131,14 +131,14 @@ textarea:focus {
     color: var(--accent) !important;
     border-bottom: 2px solid var(--accent) !important;
 }
-
+ 
 /* ── Dataframe ── */
 [data-testid="stDataFrame"] {
     background: var(--bg2) !important;
     border: 1px solid var(--border) !important;
     border-radius: 10px !important;
 }
-
+ 
 /* ── Info / warning boxes ── */
 .stAlert {
     background: var(--bg2) !important;
@@ -147,20 +147,20 @@ textarea:focus {
     font-family: var(--mono) !important;
     font-size: 0.8rem !important;
 }
-
+ 
 /* ── Progress bars ── */
 .stProgress > div > div {
     background: var(--accent) !important;
 }
-
+ 
 /* Divider */
 hr { border-color: var(--border) !important; }
-
+ 
 /* Remove Streamlit branding padding */
 .block-container { padding-top: 1.5rem !important; }
 </style>
 """, unsafe_allow_html=True)
-
+ 
 # ── Token colour palette ───────────────────────────────────────────────────────
 TOKEN_COLORS = [
     {"bg": "#2d1f6e", "border": "#7c6cfa", "text": "#c4bcff"},
@@ -172,7 +172,7 @@ TOKEN_COLORS = [
     {"bg": "#3d1515", "border": "#f87171", "text": "#fecaca"},
     {"bg": "#1a1040", "border": "#818cf8", "text": "#c7d2fe"},
 ]
-
+ 
 # ── Known benchmark results (from your actual training) ───────────────────────
 BENCHMARK = {
     8000:  {"tokens": 57,  "tpw": 2.38, "compression": 3.37, "train_time": 2.98},
@@ -182,9 +182,9 @@ BENCHMARK = {
     128000:{"tokens": 44,  "tpw": 1.83, "compression": 4.36, "train_time": 5.05},
     256000:{"tokens": 44,  "tpw": 1.83, "compression": 4.36, "train_time": 4.45},
 }
-
+ 
 VOCAB_SIZES = [8000, 16000, 32000, 64000, 128000, 256000]
-
+ 
 # ── Load tokenizers ────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def load_all_tokenizers():
@@ -194,10 +194,10 @@ def load_all_tokenizers():
         if os.path.exists(path):
             toks[v] = Tokenizer.from_file(path)
     return toks
-
+ 
 tokenizers = load_all_tokenizers()
 available = list(tokenizers.keys())
-
+ 
 # ── Noise injection ────────────────────────────────────────────────────────────
 def inject_noise(text: str) -> str:
     swap = {'a':'@','e':'3','i':'1','o':'0','s':'$','t':'+','l':'1','g':'9'}
@@ -211,7 +211,7 @@ def inject_noise(text: str) -> str:
         else:
             out.append(ch)
     return ''.join(out)
-
+ 
 # ── Token HTML renderer ────────────────────────────────────────────────────────
 def render_token_html(tokens, ids):
     html = "<div style='font-family:\"Space Mono\",monospace; font-size:0.82rem; line-height:2.4; word-break:break-word;'>"
@@ -227,17 +227,17 @@ def render_token_html(tokens, ids):
         )
     html += "</div>"
     return html
-
+ 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## ⬡ BPE Explorer")
     st.markdown("<p style='font-size:0.7rem;letter-spacing:0.1em;color:#5c5a6e'>NLP TOKENIZATION STUDY</p>", unsafe_allow_html=True)
     st.divider()
-
+ 
     if not available:
         st.error("No tokenizer `.json` files found.\nPlace `bpe_tokenizer_8k.json` etc. in the same folder.")
         st.stop()
-
+ 
     vocab_label = st.selectbox(
         "Vocabulary Size",
         options=[f"{v//1000}K  ({v:,} tokens)" for v in available],
@@ -245,19 +245,19 @@ with st.sidebar:
     )
     selected_vocab = available[[f"{v//1000}K  ({v:,} tokens)" for v in available].index(vocab_label)]
     tokenizer = tokenizers[selected_vocab]
-
+ 
     st.divider()
     st.markdown("<p style='font-size:0.65rem;letter-spacing:0.1em;color:#5c5a6e'>QUICK STATS (BENCHMARK)</p>", unsafe_allow_html=True)
     bm = BENCHMARK[selected_vocab]
     st.metric("Tokens / Word", bm["tpw"])
     st.metric("Compression Ratio", f"{bm['compression']}×")
     st.metric("Training Time", f"{bm['train_time']:.2f}s")
-
+ 
     st.divider()
     show_ids  = st.toggle("Show token IDs", value=False)
     noise_on  = st.toggle("Enable noise simulation", value=True)
     compare   = st.toggle("Compare all vocab sizes", value=False)
-
+ 
     st.divider()
     st.markdown("""
     <p style='font-size:0.68rem;color:#5c5a6e;line-height:1.6'>
@@ -266,7 +266,7 @@ with st.sidebar:
     with vocab sizes 8K–256K. Zero OOV rate guaranteed by character-level fallback.
     </p>
     """, unsafe_allow_html=True)
-
+ 
 # ── Main header ───────────────────────────────────────────────────────────────
 st.markdown("""
 <div style='margin-bottom:1.5rem'>
@@ -280,12 +280,12 @@ st.markdown("""
   </p>
 </div>
 """, unsafe_allow_html=True)
-
+ 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4 = st.tabs([
     "  TOKENIZE  ", "  NOISE TEST  ", "  COMPARE ALL  ", "  INSIGHTS  "
 ])
-
+ 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — TOKENIZE
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -298,7 +298,7 @@ with tab1:
         height=110,
         key="main_input",
     )
-
+ 
     col_btn, col_hint = st.columns([1, 4])
     with col_btn:
         run = st.button("⬡  TOKENIZE", use_container_width=True)
@@ -309,13 +309,13 @@ with tab1:
             f"hover tokens to see ID</p>",
             unsafe_allow_html=True,
         )
-
+ 
     if run and input_text.strip():
         with st.spinner(""):
             encoded = tokenizer.encode(input_text)
             tokens  = encoded.tokens
             ids     = encoded.ids
-
+ 
         words = input_text.split()
         n_words  = max(len(words), 1)
         n_chars  = len(input_text)
@@ -324,7 +324,7 @@ with tab1:
         oov_r    = round(unk_c / n_tokens * 100, 2) if n_tokens else 0
         comp_r   = round(n_chars / n_tokens, 2)     if n_tokens else 0
         tpw      = round(n_tokens / n_words, 2)
-
+ 
         # ── Metrics ──
         m1, m2, m3, m4, m5 = st.columns(5)
         m1.metric("CHARACTERS",       n_chars)
@@ -332,7 +332,7 @@ with tab1:
         m3.metric("COMPRESSION",      f"{comp_r}×")
         m4.metric("TOKENS / WORD",    tpw)
         m5.metric("OOV RATE",         f"{oov_r}%")
-
+ 
         st.markdown("<p style='font-size:0.65rem;letter-spacing:0.12em;color:#5c5a6e;margin:1.2rem 0 0.4rem'>CHARACTER → TOKEN ALIGNMENT</p>", unsafe_allow_html=True)
         st.markdown(
             f"<div style='background:#13141a;border:1px solid rgba(255,255,255,0.07);"
@@ -340,7 +340,7 @@ with tab1:
             f"{render_token_html(tokens, ids)}</div>",
             unsafe_allow_html=True,
         )
-
+ 
         if show_ids:
             st.markdown("<p style='font-size:0.65rem;letter-spacing:0.12em;color:#5c5a6e;margin:1rem 0 0.4rem'>TOKEN ID SEQUENCE</p>", unsafe_allow_html=True)
             st.markdown(
@@ -350,18 +350,17 @@ with tab1:
                 f"{' · '.join(str(i) for i in ids)}</div>",
                 unsafe_allow_html=True,
             )
-
+ 
+        # ── Saliency bar ──
         # ── Saliency bar ──
         st.markdown("<p style='font-size:0.65rem;letter-spacing:0.12em;color:#5c5a6e;margin:1rem 0 0.4rem'>FRAGMENTATION HEATMAP (token count per word)</p>", unsafe_allow_html=True)
+        
         word_tokens = {}
-        cur_word_idx = 0
-        for tok in tokens:
-            clean = tok.replace("Ġ", "").replace("</w>","").replace("▁","")
-            if tok.startswith("Ġ") or tok.startswith("▁"):
-                cur_word_idx += 1
-            if cur_word_idx < len(words):
-                word_tokens[cur_word_idx] = word_tokens.get(cur_word_idx, 0) + 1
-
+        # encoded.word_ids is a built-in array that perfectly maps each token to its original word index
+        for wid in encoded.word_ids:
+            if wid is not None and wid < len(words):
+                word_tokens[wid] = word_tokens.get(wid, 0) + 1
+ 
         heat_html = "<div style='font-family:\"Space Mono\",monospace;font-size:0.78rem;line-height:2.4;word-break:break-word;'>"
         for wi, word in enumerate(words):
             cnt = word_tokens.get(wi, 1)
@@ -381,7 +380,7 @@ with tab1:
             f"border-radius:10px;padding:1rem 1.2rem'>{heat_html}</div>",
             unsafe_allow_html=True,
         )
-
+ 
         st.markdown("""
         <div style='background:#13141a;border:1px solid rgba(255,255,255,0.07);
                     border-left:3px solid #7c6cfa;border-radius:10px;padding:1rem 1.2rem;
@@ -397,10 +396,10 @@ with tab1:
           on rare words, which can degrade downstream task performance.
         </div>
         """, unsafe_allow_html=True)
-
+ 
     elif run:
         st.warning("Please enter some text above first.")
-
+ 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 2 — NOISE TEST
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -411,31 +410,31 @@ with tab2:
     Measures <b style='color:#ff6b35'>token drift</b> — how much the tokenisation changes under noise.
     </p>
     """, unsafe_allow_html=True)
-
+ 
     noise_text = st.text_area(
         "Text to stress-test",
         value="Tokenization is essential for large language models to understand text effectively.",
         height=90,
         key="noise_input",
     )
-
+ 
     if st.button("⬡  RUN NOISE TEST", key="noise_btn"):
         clean  = noise_text.strip()
         noisy  = inject_noise(clean)
-
+ 
         enc_c  = tokenizer.encode(clean)
         enc_n  = tokenizer.encode(noisy)
         tc, tn = enc_c.tokens, enc_n.tokens
         drift  = len(tn) - len(tc)
         pct    = round(drift / max(len(tc),1) * 100, 1)
-
+ 
         st.markdown("---")
         d1, d2, d3, d4 = st.columns(4)
         d1.metric("Clean tokens",  len(tc))
         d2.metric("Noisy tokens",  len(tn), delta=f"+{drift}")
         d3.metric("Token drift",   f"{pct}%", delta=f"+{pct}%", delta_color="inverse")
         d4.metric("PPL delta (ref)", "≈ +1009", delta="high", delta_color="inverse")
-
+ 
         col_c, col_n = st.columns(2)
         with col_c:
             st.markdown("<p style='font-size:0.65rem;letter-spacing:0.1em;color:#5c5a6e;margin-bottom:0.4rem'>CLEAN INPUT</p>", unsafe_allow_html=True)
@@ -464,7 +463,7 @@ with tab2:
                 f"border-radius:10px;padding:0.9rem'>{render_token_html(tn, enc_n.ids)}</div>",
                 unsafe_allow_html=True,
             )
-
+ 
         st.markdown(f"""
         <div style='background:#13141a;border:1px solid rgba(255,107,53,0.3);
                     border-left:3px solid #ff6b35;border-radius:10px;padding:1rem 1.2rem;
@@ -481,7 +480,7 @@ with tab2:
           OCR post-correction) before tokenisation in production pipelines.
         </div>
         """, unsafe_allow_html=True)
-
+ 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 3 — COMPARE ALL VOCAB SIZES
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -491,14 +490,14 @@ with tab3:
     Tokenise the same text with all 6 vocabulary sizes and compare metrics side-by-side.
     </p>
     """, unsafe_allow_html=True)
-
+ 
     cmp_text = st.text_area(
         "Text to compare across all vocab sizes",
         value="Supercalifragilisticexpialidocious is a very long and unusual word!",
         height=80,
         key="cmp_input",
     )
-
+ 
     if st.button("⬡  COMPARE ALL SIZES", key="cmp_btn"):
         if not available:
             st.error("No tokenizer files found.")
@@ -522,7 +521,7 @@ with tab3:
                 })
                 progress.progress((idx+1)/len(available), text=f"Processing {v//1000}K...")
             progress.empty()
-
+ 
             import pandas as pd
             df = pd.DataFrame(rows)
             st.dataframe(
@@ -530,7 +529,7 @@ with tab3:
                 use_container_width=True,
                 hide_index=True,
             )
-
+ 
             st.markdown("<p style='font-size:0.65rem;letter-spacing:0.1em;color:#5c5a6e;margin:1.5rem 0 0.8rem'>SEGMENTATION COMPARISON</p>", unsafe_allow_html=True)
             for v in available[:4]:
                 tok = tokenizers[v]
@@ -546,7 +545,7 @@ with tab3:
                     f"{render_token_html(enc.tokens, enc.ids)}</div>",
                     unsafe_allow_html=True,
                 )
-
+ 
             st.markdown("""
             <div style='background:#13141a;border:1px solid rgba(45,212,160,0.2);
                         border-left:3px solid #2dd4a0;border-radius:10px;padding:1rem 1.2rem;
@@ -560,13 +559,13 @@ with tab3:
               the character-level fallback guarantees complete coverage of any input.
             </div>
             """, unsafe_allow_html=True)
-
+ 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 4 — INSIGHTS
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab4:
     st.markdown("<p style='font-size:0.65rem;letter-spacing:0.12em;color:#5c5a6e;margin-bottom:1rem'>PROJECT FINDINGS & ANALYSIS</p>", unsafe_allow_html=True)
-
+ 
     insights = [
         ("⬡", "ZERO OOV GUARANTEE", "#7c6cfa",
          "BPE always falls back to individual characters, so unknown words are never truly "
@@ -594,7 +593,7 @@ with tab4:
          "rare features that a bag-of-words model could distinguish easily — but this would "
          "hurt a Transformer's attention mechanism severely."),
     ]
-
+ 
     col_a, col_b = st.columns(2)
     for i, (icon, title, color, body) in enumerate(insights):
         col = col_a if i % 2 == 0 else col_b
@@ -609,7 +608,7 @@ with tab4:
           <div style='font-size:0.8rem;color:#9896a8;line-height:1.65'>{body}</div>
         </div>
         """, unsafe_allow_html=True)
-
+ 
     st.markdown("<p style='font-size:0.65rem;letter-spacing:0.12em;color:#5c5a6e;margin:1.5rem 0 0.8rem'>BENCHMARK SUMMARY TABLE</p>", unsafe_allow_html=True)
     import pandas as pd
     df_bm = pd.DataFrame([
@@ -624,7 +623,7 @@ with tab4:
         for v in VOCAB_SIZES
     ])
     st.dataframe(df_bm, use_container_width=True, hide_index=True)
-
+ 
     st.markdown("""
     <div style='background:#13141a;border:1px solid rgba(124,108,250,0.2);
                 border-left:3px solid #7c6cfa;border-radius:10px;padding:1rem 1.2rem;
